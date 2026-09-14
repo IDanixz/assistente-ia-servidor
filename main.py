@@ -1,13 +1,12 @@
 import os
 
 from flask import Flask, request, jsonify
-from openai import OpenAI
+from google import genai
 
 app = Flask(__name__)
 
-client = OpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY"),
-    timeout=60.0
+client = genai.Client(
+    api_key=os.environ.get("GEMINI_API_KEY")
 )
 
 
@@ -20,6 +19,7 @@ def home():
 def chat():
 
     try:
+
         data = request.get_json()
 
         if not data:
@@ -36,20 +36,25 @@ def chat():
 
         print(f"Pergunta recebida: {pergunta}")
 
-        resposta = client.responses.create(
-            model="gpt-4.1-mini",
-            input=pergunta
+        resposta = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=pergunta
         )
 
-        print("Resposta recebida da IA")
+        texto = resposta.text
+
+        print("Resposta recebida da Gemini")
 
         return jsonify({
-            "resposta": resposta.output_text
+            "resposta": texto
         })
 
     except Exception as e:
 
-        print(f"ERRO OPENAI: {type(e).__name__}: {str(e)}")
+        print(
+            f"ERRO GEMINI: "
+            f"{type(e).__name__}: {str(e)}"
+        )
 
         return jsonify({
             "erro": str(e),
