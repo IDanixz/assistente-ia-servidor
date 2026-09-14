@@ -6,7 +6,8 @@ from openai import OpenAI
 app = Flask(__name__)
 
 client = OpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY")
+    api_key=os.environ.get("OPENAI_API_KEY"),
+    timeout=60.0
 )
 
 
@@ -18,21 +19,29 @@ def home():
 @app.route("/chat", methods=["POST"])
 def chat():
 
-    data = request.get_json()
-
-    pergunta = data.get("pergunta", "")
-
-    if not pergunta:
-        return jsonify({
-            "erro": "Pergunta vazia"
-        }), 400
-
     try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({
+                "erro": "Nenhum dado recebido"
+            }), 400
+
+        pergunta = data.get("pergunta", "")
+
+        if not pergunta:
+            return jsonify({
+                "erro": "Pergunta vazia"
+            }), 400
+
+        print(f"Pergunta recebida: {pergunta}")
 
         resposta = client.responses.create(
             model="gpt-4.1-mini",
             input=pergunta
         )
+
+        print("Resposta recebida da IA")
 
         return jsonify({
             "resposta": resposta.output_text
@@ -40,8 +49,11 @@ def chat():
 
     except Exception as e:
 
+        print(f"ERRO OPENAI: {type(e).__name__}: {str(e)}")
+
         return jsonify({
-            "erro": str(e)
+            "erro": str(e),
+            "tipo": type(e).__name__
         }), 500
 
 
