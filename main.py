@@ -19,7 +19,6 @@ def home():
 def chat():
 
     try:
-
         data = request.get_json()
 
         if not data:
@@ -36,10 +35,10 @@ def chat():
 
         print(f"Pergunta recebida: {pergunta}")
 
-resposta = client.models.generate_content(
-    model="gemini-3.6-flash",
-    contents=pergunta
-)
+        resposta = client.models.generate_content(
+            model="gemini-3.6-flash",
+            contents=pergunta
+        )
 
         texto = resposta.text
 
