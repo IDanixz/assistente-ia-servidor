@@ -1,14 +1,11 @@
 import os
-import time
+import requests
 
 from flask import Flask, request, jsonify
-from google import genai
 
 app = Flask(__name__)
 
-client = genai.Client(
-    api_key=os.environ.get("GEMINI_API_KEY")
-)
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
 
 @app.route("/")
@@ -20,62 +17,61 @@ def home():
 def chat():
 
     try:
-        data = request.get_json()
 
-        if not data:
-            return jsonify({
-                "erro": "Nenhum dado recebido"
-            }), 400
+        data = request.get_json()
 
         pergunta = data.get("pergunta", "")
 
-        if not pergunta:
-            return jsonify({
-                "erro": "Pergunta vazia"
-            }), 400
-
         print(f"Pergunta recebida: {pergunta}")
 
-        # Tenta até 3 vezes caso o servidor da IA esteja ocupado
-        for tentativa in range(3):
+        resposta = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "openrouter/free",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "Você é uma assistente de voz amigável chamada Assistente IA. Responda em português do Brasil, de forma curta e natural."
+                    },
+                    {
+                        "role": "user",
+                        "content": pergunta
+                    }
+                ]
+            },
+            timeout=30
+        )
 
-            try:
-                resposta = client.models.generate_content(
-                    model="gemini-3.6-flash",
-                    contents=pergunta
-                )
+        print("Status da IA:", resposta.status_code)
 
-                texto = resposta.text
+        if resposta.status_code != 200:
 
-                if texto:
-                    print("Resposta recebida da Gemini")
+            print("ERRO OPENROUTER:", resposta.text)
 
-                    return jsonify({
-                        "resposta": texto
-                    })
+            return jsonify({
+                "erro": "Erro na IA"
+            }), 500
 
-            except Exception as erro:
-                print(
-                    f"Tentativa {tentativa + 1} falhou: {erro}"
-                )
+        resultado = resposta.json()
 
-                if tentativa < 2:
-                    time.sleep(2)
+        texto = resultado["choices"][0]["message"]["content"]
+
+        print("Resposta:", texto)
 
         return jsonify({
-            "erro": "A IA está ocupada. Tente novamente."
-        }), 503
+            "resposta": texto
+        })
 
     except Exception as e:
 
-        print(
-            f"ERRO GEMINI: "
-            f"{type(e).__name__}: {str(e)}"
-        )
+        print("ERRO:", str(e))
 
         return jsonify({
-            "erro": str(e),
-            "tipo": type(e).__name__
+            "erro": str(e)
         }), 500
 
 
