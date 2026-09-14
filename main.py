@@ -35,6 +35,7 @@ def chat():
 
         print(f"Pergunta recebida: {pergunta}")
 
+
         resposta = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers={
@@ -61,7 +62,9 @@ def chat():
             timeout=30
         )
 
+
         print("Status da IA:", resposta.status_code)
+
 
         if resposta.status_code != 200:
 
@@ -77,7 +80,7 @@ def chat():
         texto = resultado["choices"][0]["message"]["content"]
 
 
-        # Corrige caracteres escapados
+        # Corrige caracteres Unicode escapados
         # Exemplo: ent\u00e3o -> então
         def corrigir_unicode(texto):
 
@@ -94,24 +97,18 @@ def chat():
         print("Resposta:", texto)
 
 
-        return jsonify(
-            {
-                "resposta": texto
-            },
-            ensure_ascii=False
-        )
+        return jsonify({
+            "resposta": texto
+        })
 
 
     except Exception as e:
 
         print("ERRO:", str(e))
 
-        return jsonify(
-            {
-                "erro": str(e)
-            },
-            ensure_ascii=False
-        ), 500
+        return jsonify({
+            "erro": str(e)
+        }), 500
 
 
 if __name__ == "__main__":
