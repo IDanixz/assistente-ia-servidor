@@ -1,4 +1,5 @@
 import os
+import time
 
 from flask import Flask, request, jsonify
 from google import genai
@@ -35,18 +36,35 @@ def chat():
 
         print(f"Pergunta recebida: {pergunta}")
 
-        resposta = client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=pergunta
-        )
+        # Tenta até 3 vezes caso o servidor da IA esteja ocupado
+        for tentativa in range(3):
 
-        texto = resposta.text
+            try:
+                resposta = client.models.generate_content(
+                    model="gemini-3.6-flash",
+                    contents=pergunta
+                )
 
-        print("Resposta recebida da Gemini")
+                texto = resposta.text
+
+                if texto:
+                    print("Resposta recebida da Gemini")
+
+                    return jsonify({
+                        "resposta": texto
+                    })
+
+            except Exception as erro:
+                print(
+                    f"Tentativa {tentativa + 1} falhou: {erro}"
+                )
+
+                if tentativa < 2:
+                    time.sleep(2)
 
         return jsonify({
-            "resposta": texto
-        })
+            "erro": "A IA está ocupada. Tente novamente."
+        }), 503
 
     except Exception as e:
 
